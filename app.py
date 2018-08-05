@@ -1,9 +1,10 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, abort
 from redis import Redis, RedisError
-from jsonifyexcept import jsonifyexcept
+from validate import ValidateInputs
 import os
 import socket
 import hashlib
+import functools
 
 # Connect to Redis
 redis = Redis(host="redis", db=0, socket_connect_timeout=2, socket_timeout=2)
@@ -11,8 +12,39 @@ sha256 = hashlib.sha256()
 
 app = Flask(__name__)
 
+
+def except404(function):
+    """
+    A decorator that aborts with 404 not found.
+    """
+    @functools.wraps(function)
+    def wrapper(*args, **kwargs):
+        try:
+            return function(*args, **kwargs)
+        except Exception as e:
+            abort(404, jsonify(err_msg=e.message))
+
+    return wrapper
+
+
+def redisping(function):
+    """
+    A decorator that pings redis to check connection
+    """
+    @functools.wraps(function)
+    def wrapper(*args, **kwargs):
+        try:
+            redis.ping()
+            return function(*args, **kwargs)
+        except RedisError:
+            raise Exception("cannot connect to Redis")
+
+    return wrapper
+
+
 @app.route("/")
-@jsonifyexcept
+@redisping
+@except404
 def hello():
     try:
         visits = redis.incr("counter")
@@ -26,8 +58,13 @@ def hello():
 
 
 @app.route('/messages', methods=['POST'])
-@jsonifyexcept
-def messages():
+@redisping
+@except404
+def hashmsg():
+    inputs = ValidateInputs(request)
+    if not inputs.validate():
+        raise Exception("validation errros: {}".format(inputs.errors))
+
     msg = request.get_json()["message"].encode('utf-8')
     sha256.update(msg)
     hash = sha256.hexdigest()
@@ -36,7 +73,8 @@ def messages():
 
 
 @app.route('/messages/<string:hash>', methods=['GET'])
-@jsonifyexcept
+@redisping
+@except404
 def search(hash):
     msg = redis.get(hash)
     if msg:

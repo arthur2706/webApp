@@ -30,7 +30,8 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - "/home/docker/data:/data"
+      - "/Users/aumansky2/eclipse-workspace/docker/webApp/data:/data"
+      #- "/home/docker/data:/data"
     deploy:
       placement:
         constraints: [node.role == manager]
