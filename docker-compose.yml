@@ -1,7 +1,7 @@
 version: "3"
 services:
   web:
-    image: arthur2706/webapp:v2
+    image: webapp:latest
     deploy:
       replicas: 5
       restart_policy:
@@ -30,8 +30,7 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - "/Users/aumansky2/eclipse-workspace/docker/webApp/data:/data"
-      #- "/home/docker/data:/data"
+      - "/Users/docker/redis/data:/data"
     deploy:
       placement:
         constraints: [node.role == manager]

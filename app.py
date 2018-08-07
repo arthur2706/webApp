@@ -3,12 +3,11 @@ from redis import Redis, RedisError
 from validate import ValidateInputs
 import os
 import socket
-import hashlib
+from hashlib import sha256
 import functools
 
 # Connect to Redis
 redis = Redis(host="redis", db=0, socket_connect_timeout=2, socket_timeout=2)
-sha256 = hashlib.sha256()
 
 app = Flask(__name__)
 
@@ -66,8 +65,8 @@ def hashmsg():
         raise Exception("validation errros: {}".format(inputs.errors))
 
     msg = request.get_json()["message"].encode('utf-8')
-    sha256.update(msg)
-    hash = sha256.hexdigest()
+    hasher = sha256(msg)
+    hash = hasher.hexdigest()
     redis.set(str(hash), msg)
     return jsonify(digest=str(hash))
 

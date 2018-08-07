@@ -31,6 +31,7 @@ then
 else
     echo "Different"
 fi
+rm foo.shasum foo.webapp
 
 echo ""
 echo "fetching 2c26b4..'s hashing msg.."
